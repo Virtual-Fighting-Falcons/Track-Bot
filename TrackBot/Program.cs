@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Discord;
@@ -7,10 +10,13 @@ using Discord.WebSocket;
 
 public class TrackModule : ModuleBase<SocketCommandContext>
 {
-    [Command("test")]
+    [Command("latest")]
     public async Task TestAsync()
     {
-        await Context.Channel.SendMessageAsync("Test");
+        DirectoryInfo trackDirectory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory + @"Track Files");
+        FileInfo trackFile = trackDirectory.GetFiles().Where(file => file.Extension == ".trk").OrderByDescending(file => file.LastWriteTime).First();
+
+        await Context.Channel.SendFileAsync(trackFile.FullName);
     }
 }
 
@@ -71,17 +77,10 @@ public class CommandHandler
 
         int argPos = 0;
 
-        if (!(message.HasStringPrefix("!trackbot ", ref argPos) ||
-            message.HasMentionPrefix(_client.CurrentUser, ref argPos)) ||
-            message.Author.IsBot)
-            return;
-
-        if (!message.HasStringPrefix("!trackbot ", ref argPos) || !message.HasMentionPrefix(_client.CurrentUser, ref argPos)) return;
-        if (message.Author.IsBot) return;
+        if (!(message.HasStringPrefix("!trackbot ", ref argPos) || message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot) return;
 
         var context = new SocketCommandContext(_client, message);
 
         await _commands.ExecuteAsync(context: context, argPos: argPos, services: null);
     }
 }
-
